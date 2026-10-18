@@ -1,43 +1,35 @@
-from flask import Flask, render_template
-
-app=Flask(__name__)
-
-@app.route("/") #decorador o ruta
-def index():
-    titulo="Pagina de Inicio"
-    listado = ['Python', 'Flask', 'Jinja2', 'HTML', 'CSS']
-    return render_template("index.html", titulo=titulo, listado=listado)
-
-
-@app.route("/hola")
-def hola():
-    return "<h1> hola PWA - IEVN1003 </h1> "
-
-#como pasar parametros por url
-
-
-@app.route("/user/<string:nom>") #aqui dice que es de tipo string y se llama nom
-def user(nom):
-    return "<h1> Hola User:{} </h1>  ".format(nom)
-
-
-
-@app.route("/numero/<int:n>") #aqui dice que es de tipo string y se llama nom
-def numero(n):
-    return "Numero: {}".format(n)
-
-
-@app.route("/user/<int:id><string:username>") #aqui dice que es de tipo string y se llama nom
-def username(id,username):
-    return "ID: {} nombre: {}".format(id,username)
-
-
-@app.route("/suma/<float:n1>/<float:n2>") #aqui dice que es de tipo string y se llama nom
-def func(n1,n2):
-    return "la suma es : {}".format(n1+n2)
-
-
-
-
+from flask import Flask, jsonify, request
+from flask_mysqldb import MySQL
+from flask_cors import CORS
+ 
+from config import config
+ 
+app= Flask(__name__)
+CORS(app)
+con=MySQL(app)
+ 
+@app.route("/alumnos", methods=["GET"])
+def lista_alumnos():
+    try:
+        cursor=con.connection.cursor()
+        sql="select * from alumnos"
+        cursor.execute(sql)
+        datos=cursor.fetchall()
+        alumnos=[]
+        for fila in datos:
+            alumno={"matricula":fila[0],"nombre":fila[1],"apaterno":fila[2],"amaterno":fila[3],"correo":fila[4]}
+ 
+            alumnos.append(alumno)
+        return jsonify({'alumnos':alumnos, 'mensaje':"Lista de alumnos", 'exito':True})
+   
+    except Exception as ex:
+        return jsonify({"message":"error {}".format(ex),'exito':False})
+ 
+def pagina_no_encontrada(error):
+    return "<h1>Pagina no encontrada</h1>"
+ 
+ 
 if __name__=="__main__":
-    app.run(debug=True)
+    app.config.from_object(config['development'])
+    app.register_error_handler(404,pagina_no_encontrada)
+    app.run(host='0.0.0.0', port=5000)
